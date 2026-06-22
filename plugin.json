@@ -1,0 +1,12 @@
+{
+  "name": "dev-assistant",
+  "description": "应用开发决策助理 — 技术选型、架构设计、代码审查，带跨会话记忆与语义知识库",
+  "version": "0.1.0",
+  "author": {
+    "name": "c8n1ao"
+  },
+  "agents": "agents/",
+  "skills": "skills/",
+  "commands": "commands/",
+  "hooks": "hooks/"
+}

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 海马体 — 运行时数据
+hippocampus/memory.db
+hippocampus/memory.db-wal
+hippocampus/memory.db-shm
+__test_memory.*
+
+# 知识库 — 索引数据 & 模型
+references/.index/
+references/.models/
+
+# 知识库 — 用户文档（种子文档用 git add -f 强制追踪）
+references/docs/
+
+# 服务端 — 日志 & 虚拟环境
+server/.venv/
+server/stderr.log
+
+# IDE
+.DS_Store
+
+# 用户本地配置（不入库）
+.claude/
+hooks/hooks.json
+
+# 草稿
+drafts/
