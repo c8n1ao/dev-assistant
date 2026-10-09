@@ -388,10 +388,11 @@ development-assistant-mcp_hippocampus_add:
    - 调用 `development-assistant-mcp_knowledge_write_file(path="references/TAGS.md", content=修改后的全文)` 写回
    - ⚠️ 禁止直接生成新的 TAGS.md 覆盖——已有标签必须保留
 
-4. ④ 更新 `references/INDEX.md`（已有文件，read→modify→write）：
-   - 调用 `development-assistant-mcp_knowledge_read_file("references/INDEX.md")` 读取当前完整索引
-   - 按 INDEX.md 的表格格式追加新文档条目（含文件路径、内容描述、标签、Keywords）
-   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/INDEX.md", content=修改后的全文)` 写回
+4. ④ 更新 obsidian 索引 `references/docs/obsidian-knowledge/global/INDEX.md`（已有文件，read→modify→write）：
+   - 调用 `development-assistant-mcp_knowledge_read_file("references/docs/obsidian-knowledge/global/INDEX.md")` 读取当前完整索引
+   - 按 vault 格式追加一行：`- [<topic>](<topic>.md) — 一句话描述`（Markdown 链接，不是 wiki link）
+   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/obsidian-knowledge/global/INDEX.md", content=修改后的全文)` 写回
+   - 🚨 **该 INDEX 是 recall 在 SessionStart 注入会话的唯一入口**，漏更新等于这条知识永远不会被 Claude 感知
    - ⚠️ 禁止直接生成新的 INDEX.md 覆盖——已有条目必须保留
 
 5. ⑤ `development-assistant-mcp_knowledge_add_doc()` 增量索引

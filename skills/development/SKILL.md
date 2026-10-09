@@ -163,16 +163,18 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 1. AI 生成草稿（含 keywords 字段）
 2. 呈现决策点，等待用户确认
 3. 写入 `/Users/c8/.copilot/installed-plugins/development-assistant/references/docs/obsidian-knowledge/global/` 目录（该路径是软链，实际落到 vault 的 `c8n1ao-Bomb/knowledge/global/`）
-4. 更新 `TAGS.md`（已有文件，read→modify→write）：
+4. 更新标签注册表 `references/TAGS.md`（已有文件，read→modify→write）：
    - 用 `knowledge_read_file` 读取 `TAGS.md` 全文
    - 检查新标签是否已注册——已存在则跳过，未注册则按 TAGS.md 格式追加
    - 用 `knowledge_write_file` 将**修改后的全文**写回
    - ⚠️ 禁止只写新增标签行——已有标签必须保留
-5. 更新 `INDEX.md`（已有文件，read→modify→write）：
-   - 用 `knowledge_read_file` 读取 `INDEX.md` 全文
-   - 按 INDEX.md 的表格格式追加新文档条目（含文件路径、内容描述、标签、Keywords）
+   - 注：TAGS.md 属于 references 侧元数据；vault 侧没有对应文件
+5. 更新 obsidian 索引 `references/docs/obsidian-knowledge/global/INDEX.md`（已有文件，read→modify→write）：
+   - 用 `knowledge_read_file` 读取该 INDEX 全文
+   - **按 vault 格式**追加一行：``- [<topic>](<topic>.md) — 一句话描述``（注意是 Markdown 链接，不是 wiki link）
    - 用 `knowledge_write_file` 将**修改后的全文**写回
-   - ⚠️ 禁止只写新增条目——已有索引行必须保留
+   - 🚨 **这一步不可跳过**：该 INDEX 是 recall 在 SessionStart 注入会话的唯一入口，漏更新等于这条知识**永远不会被 Claude 感知**
+   - ⚠️ 禁止只写新增行——已有索引行必须保留
 6. 调用 `development-assistant-mcp_knowledge_add_doc()` 增量索引
 7. 海马体记录
 
