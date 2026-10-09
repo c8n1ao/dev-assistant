@@ -377,10 +377,11 @@ development-assistant-mcp_hippocampus_add:
 
 1. ① 去除 `status: draft`
 
-2. ② 将草稿移入 vault 的 `knowledge/global/`（新建文件）：
+2. ② 将草稿移入 vault 对应目录（新建文件；`references/docs/obsidian-knowledge/` 是软链，实际落到 `c8n1ao-Bomb/knowledge/`）：
+   - 跨项目通用 → `…/obsidian-knowledge/global/<topic>.md`；项目特定 → `…/obsidian-knowledge/projects/<project>/<topic>.md`
    - 调用 `development-assistant-mcp_knowledge_read_file("drafts/{filename}")` 读取草稿内容
    - 去除 `status: draft`
-   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/obsidian-knowledge/global/{topic}.md", content=修改后的全文)` 写入正式文档（该路径是软链，实际落到 vault 的 `c8n1ao-Bomb/knowledge/global/`）
+   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/obsidian-knowledge/<global|projects/<project>>/<topic>.md", content=修改后的全文)` 写入正式文档
 
 3. ③ 新标签 → 注册到 `references/TAGS.md`（已有文件，read→modify→write）：
    - 调用 `development-assistant-mcp_knowledge_read_file("references/TAGS.md")` 读取当前标签注册表全文
@@ -388,10 +389,10 @@ development-assistant-mcp_hippocampus_add:
    - 调用 `development-assistant-mcp_knowledge_write_file(path="references/TAGS.md", content=修改后的全文)` 写回
    - ⚠️ 禁止直接生成新的 TAGS.md 覆盖——已有标签必须保留
 
-4. ④ 更新 obsidian 索引 `references/docs/obsidian-knowledge/global/INDEX.md`（已有文件，read→modify→write）：
-   - 调用 `development-assistant-mcp_knowledge_read_file("references/docs/obsidian-knowledge/global/INDEX.md")` 读取当前完整索引
-   - 按 vault 格式追加一行：`- [<topic>](<topic>.md) — 一句话描述`（Markdown 链接，不是 wiki link）
-   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/obsidian-knowledge/global/INDEX.md", content=修改后的全文)` 写回
+4. ④ 更新**对应目录自己的** INDEX（已有文件，read→modify→write）——两种格式不同：
+   - global → `…/obsidian-knowledge/global/INDEX.md`，追加 ``- [<topic>](<topic>.md) — 一句话描述``（Markdown 链接）
+   - project → `…/obsidian-knowledge/projects/<project>/INDEX.md`，追加 ``- [[<topic>]] — 一句话描述``（wiki link，无 .md 后缀）
+   - 调用 `development-assistant-mcp_knowledge_read_file(...)` 读取该 INDEX 全文 → 末尾追加一行 → `development-assistant-mcp_knowledge_write_file(...)` 写回完整全文
    - 🚨 **该 INDEX 是 recall 在 SessionStart 注入会话的唯一入口**，漏更新等于这条知识永远不会被 Claude 感知
    - ⚠️ 禁止直接生成新的 INDEX.md 覆盖——已有条目必须保留
 
