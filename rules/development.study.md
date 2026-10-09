@@ -14,7 +14,7 @@ description: '/development-study — autonomous learning agent. Actively collect
 
 > 海马体和知识库的完整约束规范见 `CONVENTIONS.md`。执行写入操作前必须用 `development-assistant-mcp_knowledge_read_file` 读取对应章节：
 > - 写入海马体前 → 读取 CONVENTIONS.md §1-§3（信号级别 / 记忆类型 / 内容结构含 §3.1 格式适配 + §3.2 维度注册 + §3.3 失效条件标准）
-> - 生成文档草稿前 → 读取 CONVENTIONS.md §6-§11（QG-3 / QG-4 / QG-8 / QG-9 / QG-11 / 学习源可信度指南）
+> - 生成文档草稿前 → 读取 CONVENTIONS.md §6-§12（QG-3 / QG-4 / QG-8 / QG-9 / QG-11 / 学习源可信度指南 / Obsidian 文档规范含 wiki links）
 > - QG-2 入库前 → 读取 CONVENTIONS.md §4-§5（QG-1 / QG-2）
 
 ## 三种学习模式
@@ -180,6 +180,8 @@ description: '/development-study — autonomous learning agent. Actively collect
 - 即使部分源被跳过，用已成功读取的源继续提炼
 - 在 draft 正文末尾标注「⚠️ 以下源不可访问: {URL}」
 - **本步骤仅生成 draft 文本内容，不调用任何写入工具**——写入操作在 Step 3 执行
+- 正文中必须包含指向相关现有文档的 `[[wiki links]]`（不少于 3 个），使用 `[[文件名|显示文字]]` 格式
+- draft 末尾必须包含 `## 参见` 小节，列出 3-8 个最相关的文档 wiki links（按 CONVENTIONS.md §12）
 
 Frontmatter 必含（按 CONVENTIONS.md §6 QG-3）：
 - title, primary_tag, tags, keywords(中英双语 5-15), credibility, added
@@ -364,7 +366,7 @@ development-assistant-mcp_hippocampus_add:
 
 | # | 方案 | 说明 |
 |---|------|------|
-| A | 入库 | 草稿 → references/docs/ + 海马体记录 |
+| A | 入库 | 草稿 → vault（global/ 或 projects/<project>/）+ 更新对应 INDEX + 海马体记录 |
 | B | 拒绝 | 记录拒绝原因，删除草稿 |
 | C | 修改 | 提供修改意见，重新生成草稿 |
 | D | 稍后 | 保留草稿，跳过本条 |
@@ -373,10 +375,11 @@ development-assistant-mcp_hippocampus_add:
 
 1. ① 去除 `status: draft`
 
-2. ② 将草稿移入 `references/docs/`（新建文件）：
+2. ② 将草稿移入 vault 对应目录（新建文件；`references/docs/obsidian-knowledge/` 是软链，实际落到 `c8n1ao-Bomb/knowledge/`）：
+   - 跨项目通用 → `…/obsidian-knowledge/global/<topic>.md`；项目特定 → `…/obsidian-knowledge/projects/<project>/<topic>.md`
    - 调用 `development-assistant-mcp_knowledge_read_file("drafts/{filename}")` 读取草稿内容
    - 去除 `status: draft`
-   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/{primary_tag}_{topic}.md", content=修改后的全文)` 写入正式文档
+   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/obsidian-knowledge/<global|projects/<project>>/<topic>.md", content=修改后的全文)` 写入正式文档
 
 3. ③ 新标签 → 注册到 `references/TAGS.md`（已有文件，read→modify→write）：
    - 调用 `development-assistant-mcp_knowledge_read_file("references/TAGS.md")` 读取当前标签注册表全文
@@ -384,10 +387,11 @@ development-assistant-mcp_hippocampus_add:
    - 调用 `development-assistant-mcp_knowledge_write_file(path="references/TAGS.md", content=修改后的全文)` 写回
    - ⚠️ 禁止直接生成新的 TAGS.md 覆盖——已有标签必须保留
 
-4. ④ 更新 `references/INDEX.md`（已有文件，read→modify→write）：
-   - 调用 `development-assistant-mcp_knowledge_read_file("references/INDEX.md")` 读取当前完整索引
-   - 按 INDEX.md 的表格格式追加新文档条目（含文件路径、内容描述、标签、Keywords）
-   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/INDEX.md", content=修改后的全文)` 写回
+4. ④ 更新**对应目录自己的** INDEX（已有文件，read→modify→write）——两种格式不同：
+   - global → `…/obsidian-knowledge/global/INDEX.md`，追加 ``- [<topic>](<topic>.md) — 一句话描述``（Markdown 链接）
+   - project → `…/obsidian-knowledge/projects/<project>/INDEX.md`，追加 ``- [[<topic>]] — 一句话描述``（wiki link，无 .md 后缀）
+   - 调用 `development-assistant-mcp_knowledge_read_file(...)` 读取该 INDEX 全文 → 末尾追加一行 → `development-assistant-mcp_knowledge_write_file(...)` 写回完整全文
+   - 🚨 **该 INDEX 是 recall 在 SessionStart 注入会话的唯一入口**，漏更新等于这条知识永远不会被 Claude 感知
    - ⚠️ 禁止直接生成新的 INDEX.md 覆盖——已有条目必须保留
 
 5. ⑤ `development-assistant-mcp_knowledge_add_doc()` 增量索引

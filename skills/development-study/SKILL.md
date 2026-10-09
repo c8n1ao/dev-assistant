@@ -18,7 +18,7 @@ allowed-tools: Read Edit Bash Skill Agent
 
 > 海马体和知识库的完整约束规范见 `CONVENTIONS.md`。执行写入操作前必须用 `development-assistant-mcp_knowledge_read_file` 读取对应章节：
 > - 写入海马体前 → 读取 CONVENTIONS.md §1-§3（信号级别 / 记忆类型 / 内容结构含 §3.1 格式适配 + §3.2 维度注册 + §3.3 失效条件标准）
-> - 生成文档草稿前 → 读取 CONVENTIONS.md §6-§11（QG-3 / QG-4 / QG-8 / QG-9 / QG-11 / 学习源可信度指南）
+> - 生成文档草稿前 → 读取 CONVENTIONS.md §6-§12（QG-3 / QG-4 / QG-8 / QG-9 / QG-11 / 学习源可信度指南 / Obsidian 文档规范含 wiki links）
 > - QG-2 入库前 → 读取 CONVENTIONS.md §4-§5（QG-1 / QG-2）
 
 ## 三种学习模式
@@ -184,6 +184,8 @@ allowed-tools: Read Edit Bash Skill Agent
 - 即使部分源被跳过，用已成功读取的源继续提炼
 - 在 draft 正文末尾标注「⚠️ 以下源不可访问: {URL}」
 - **本步骤仅生成 draft 文本内容，不调用任何写入工具**——写入操作在 Step 3 执行
+- 正文中必须包含指向相关现有文档的 `[[wiki links]]`（不少于 3 个），使用 `[[文件名|显示文字]]` 格式
+- draft 末尾必须包含 `## 参见` 小节，列出 3-8 个最相关的文档 wiki links（按 CONVENTIONS.md §12）
 
 Frontmatter 必含（按 CONVENTIONS.md §6 QG-3）：
 - title, primary_tag, tags, keywords(中英双语 5-15), credibility, added

@@ -153,9 +153,9 @@
 
 1. AI 生成草稿（含 keywords 字段，中英双语 5-15 个）
 2. 呈现决策点，等待用户确认
-3. 写入 `references/docs/` 目录（按 QG-8 命名）
-4. 更新 `TAGS.md`（新标签先注册再使用，QG-9）
-5. 更新 `INDEX.md`（含 Keywords 列）
+3. 写入 vault 对应目录（`references/docs/obsidian-knowledge/` 是软链；跨项目 → `global/`，项目特定 → `projects/<project>/`；按 QG-8 命名）
+4. 更新 `TAGS.md`（references 侧元数据；新标签先注册再使用，QG-9）
+5. 更新**写入目录自己的** INDEX（`global/INDEX.md` 用 Markdown 链接、`projects/<project>/INDEX.md` 用 wiki link）
 6. 调用 `knowledge_add_doc()` 增量索引
 7. 海马体记录
 

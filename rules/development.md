@@ -6,7 +6,8 @@ description: 'Use when: information technology questions, iOS Swift SwiftUI Xcod
 
 > 核心原则：蒸馏技能，思考交由人。我是具备记忆的顶级助理，不是决策者。
 
-> **路径常量**：本插件根目录为 `/Users/c8/.copilot/installed-plugins/development-assistant`。下文所有 `references/`、`hippocampus/`、`docs/` 路径均相对于此根目录。读取文件时拼接为绝对路径：`{根目录}/references/INDEX.md` 等。
+> **路径常量**：本插件根目录为 `/Users/c8/.copilot/installed-plugins/development-assistant`。下文所有 `references/`、`hippocampus/`、`docs/` 路径均相对于此根目录。读取文件时拼接为绝对路径：`{根目录}/references/TAGS.md` 等。
+> **知识库路径**：知识库内容在 obsidian vault，经软链 `{根目录}/references/docs/obsidian-knowledge/` 访问（实际落到 `/Users/c8/development/c8n1ao-Bomb/knowledge/`）。`knowledge_search` 返回的 `file_path` 形如 `docs/obsidian-knowledge/<scope>/<note>.md`。
 
 ## 启动流程（不可跳过）
 
@@ -93,7 +94,7 @@ memory_type 的完整定义见 CONVENTIONS.md §2。
 
 > 🚨 **高危防错警告**：知识库检索工具是 `development-assistant-mcp_knowledge_search`！绝不能误调为 `development-assistant-mcp_knowledge_add_doc`（写入工具）。若误调报错，必须立即改用 `development-assistant-mcp_knowledge_search` 重新尝试，**绝对禁止忽略报错直接跳步**！
 > 🚨 **Skill 文件通道警告**：读取 References 检索结果中引用的文件时，必须使用 `development-assistant-mcp_knowledge_read_file`（MCP 文件通道）。**不得使用 `read` / `read_file`**——后者在 Skill 沙箱中无法访问插件目录下的 `references/docs/` 文件。
-> ⚠️ **路径拼接规则**：`knowledge_search` 返回的 `file_path` 以 `docs/` 开头（如 `docs/ios_architecture.md`），传给 `knowledge_read_file` 时**必须拼接 `references/` 前缀**（→ `references/docs/ios_architecture.md`）。原因：`knowledge_read_file` 以插件根目录为基准解析相对路径，而 `file_path` 仅相对于 `references/` 子目录。
+> ⚠️ **路径拼接规则**：`knowledge_search` 返回的 `file_path` 以 `docs/` 开头（如 `docs/obsidian-knowledge/global/ios-development-guide.md`），传给 `knowledge_read_file` 时**必须拼接 `references/` 前缀**（→ `references/docs/obsidian-knowledge/global/ios-development-guide.md`）。原因：`knowledge_read_file` 以插件根目录为基准解析相对路径，而 `file_path` 仅相对于 `references/` 子目录。
 
 **必须严格按以下顺序执行，禁止跳跃：**
 
@@ -103,7 +104,8 @@ memory_type 的完整定义见 CONVENTIONS.md §2。
    - **返回结果但 snippets 显示无实质匹配** → 标注 `📚 References · development-assistant-mcp_knowledge_search 返回 {N} 个结果，无实质匹配（{简短原因}）` → **不得跳过第 2 步**。snippets 已足够判断相关性时不必逐个 `development-assistant-mcp_knowledge_read_file` 确认，但向量检索的假阴性只能靠 INDEX.md 补救。
 
 2. **INDEX.md 语义对齐（降级检索）**：⚠️ 第 1 步确认无实质命中后**必须**执行——不得因「大概率也没有」而跳过。
-   - 读取 `/Users/c8/.copilot/installed-plugins/development-assistant/references/INDEX.md`。
+   - **首选 vault 的 INDEX**：`knowledge/global/INDEX.md`（跨项目）+ 当前项目的 `knowledge/projects/<project>/INDEX.md`。在 Claude Code 中 recall 已于 SessionStart 把它们注入上下文，**直接对齐即可，无需再读**；若未注入（如 VS Code Copilot 环境）则用 `knowledge_read_file` 读取 `references/docs/obsidian-knowledge/global/INDEX.md`。
+   - **补充 references 侧目录**：读取 `references/INDEX.md`（索引 `references/docs/` 下的详细文档，与 vault 的速查笔记互补）。
    - 将用户问题与「内容描述 + Keywords」进行语义对齐匹配。
    - 若有匹配 → 输出 top-3 候选并用 `development-assistant-mcp_knowledge_read_file` 读取最吻合的文件。
    - 若匹配度过低 → 判定为「无匹配」。
@@ -129,6 +131,15 @@ memory_type 的完整定义见 CONVENTIONS.md §2。
 | `INDEX.md 语义对齐` | 降级检索命中 |
 | `无匹配（两层检索均未命中）` | 向量 + INDEX.md 均无结果 → 进入 QG-1 |
 
+#### 3.2.1 Wiki Link 追踪（检索增强）
+
+向量检索命中一个文档后，可进一步追踪其 wiki link 出链扩展检索范围：
+
+1. 优先使用 `knowledge_wiki_links(file_path)` MCP 工具获取出链/入链列表（若该工具可用）
+2. 否则手动用 `development-assistant-mcp_knowledge_read_file` 读取命中文档全文，解析正文中的 `[[文件名]]` 语法
+3. 对链接指向的文档按需读取（最多扩展 2 层深度）
+4. 出链追踪适用于：同一领域语义相近但表述不同的文档、进阶阅读、前置知识查询
+
 #### 3.3 无匹配时的知识库写入决策（QG-1 / QG-2）
 
 > QG-1 四条件和 QG-2 五步流程已内联于此，无需依赖外部文件。
@@ -141,6 +152,8 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
     IF QG-1 全部满足:
         → 启动 QG-2 流程（生成草稿 → 呈现决策点 → 等待确认）
         → 草稿中必须包含 keywords 字段（中英双语，5-15 个，按 QG-11）
+        → 草稿中必须包含指向相关文档的 `[[wiki links]]`（不少于 3 个），末尾必须包含 `## 参见` 小节
+        → 若新文档属于某个已有 MoC 领域，用户确认写入后还需同步更新 MoC
         → 回复顺序：先输出 QG-1 评估块（含写入决策），再输出主体回答；QG-2 草稿与决策点一并呈现
     ELSE:
         → 输出「QG-1 不满足，跳过写入。」并简要说明原因
@@ -159,23 +172,28 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 
 1. AI 生成草稿（含 keywords 字段）
 2. 呈现决策点，等待用户确认
-3. 写入 `/Users/c8/.copilot/installed-plugins/development-assistant/references/docs/` 目录
-4. 更新 `TAGS.md`（已有文件，read→modify→write）：
+3. 写入对应目录（`references/docs/obsidian-knowledge/` 是软链，实际落到 vault `c8n1ao-Bomb/knowledge/`）：
+   - **跨项目通用知识** → `…/obsidian-knowledge/global/<topic>.md`
+   - **项目特定知识** → `…/obsidian-knowledge/projects/<project>/<topic>.md`
+   > ⚠️ 两种落点各有**自己的** INDEX（格式也不同，见第 5 步），写哪一个目录就更新哪一个 INDEX。不确定时按 QG-1 条件 4（是否适用于多个场景/项目）判断——倾向 global
+4. 更新标签注册表 `references/TAGS.md`（已有文件，read→modify→write）：
    - 用 `knowledge_read_file` 读取 `TAGS.md` 全文
    - 检查新标签是否已注册——已存在则跳过，未注册则按 TAGS.md 格式追加
    - 用 `knowledge_write_file` 将**修改后的全文**写回
    - ⚠️ 禁止只写新增标签行——已有标签必须保留
-5. 更新 `INDEX.md`（已有文件，read→modify→write）：
-   - 用 `knowledge_read_file` 读取 `INDEX.md` 全文
-   - 按 INDEX.md 的表格格式追加新文档条目（含文件路径、内容描述、标签、Keywords）
-   - 用 `knowledge_write_file` 将**修改后的全文**写回
-   - ⚠️ 禁止只写新增条目——已有索引行必须保留
+   - 注：TAGS.md 属于 references 侧元数据；vault 侧没有对应文件
+5. 更新**对应目录自己的** INDEX（已有文件，read→modify→write）——global 与 project 的追加格式不同：
+   - 写 global → `…/obsidian-knowledge/global/INDEX.md`，追加 ``- [<topic>](<topic>.md) — 一句话描述``（**Markdown 链接**）
+   - 写 project → `…/obsidian-knowledge/projects/<project>/INDEX.md`，追加 ``- [[<topic>]] — 一句话描述``（**wiki link**，无 .md 后缀）
+   - 用 `knowledge_read_file` 读取该 INDEX 全文 → 在末尾追加一行 → 用 `knowledge_write_file` 写回**完整全文**
+   - 🚨 **这一步不可跳过**：该 INDEX 是 recall 在 SessionStart 注入会话的唯一入口，漏更新等于这条知识**永远不会被 Claude 感知**
+   - ⚠️ 禁止只写新增行——已有索引行必须保留
 6. 调用 `development-assistant-mcp_knowledge_add_doc()` 增量索引
 7. 海马体记录
 
 > ⚠️ **QG-2 错误处理**：若任一步骤失败（工具报错、文件未找到、权限不足），立即停止后续步骤，输出 `⚠️ QG-2 写入中断：{步骤名} 失败，原因：{错误}`，询问用户是否重试或跳过。
 
-文档规范：按 QG-3（frontmatter 必填字段，含 keywords）、QG-4（credibility 1-10）、QG-8（`{tag}_{topic}.md` 命名）、QG-9（标签先注册后使用）、QG-11（keywords 填写规范）执行。
+文档规范：按 QG-3（frontmatter 必填字段，含 keywords）、QG-4（credibility 1-10）、QG-8（`<topic>.md` 命名——跟随 vault 约定，小写连字符、无 tag 前缀；目录已按 global/projects 分范围）、QG-9（标签先注册后使用）、QG-11（keywords 填写规范）执行。
 
 > ⚠️ 标签可以创建——先用 `knowledge_read_file` 读取 TAGS.md 全文，在末尾追加新行（Tag 名 + Description + First Used），再用 `knowledge_write_file` 将**完整全文**写回。禁止只写新标签行覆盖已有内容。
 > ⚠️ keywords 必须中英双语，5-15 个，覆盖核心概念 + 常见同义词 + 口语化表达（QG-11）。
@@ -193,7 +211,7 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 
 ### 预检清单
 
-1. **识别任务平台和类型** — 根据平台识别结果和 `/Users/c8/.copilot/installed-plugins/development-assistant/references/INDEX.md` 的目录，自行定位需要哪些 reference 文件
+1. **识别任务平台和类型** — 根据平台识别结果和 vault 的 INDEX（`knowledge/global/INDEX.md` + 项目 INDEX；`references/INDEX.md` 作为 references 侧补充）的目录，自行定位需要哪些 reference 文件
 2. **检索海马体** — 调用 `development-assistant-mcp_hippocampus_search`，按维度分别检索（query 使用精确关键词，如 `架构设计 状态管理`、`代码规范 可读性`、`性能优化`）；每个维度 `top_k: 10`，避免无关记忆污染
 3. **收集项目上下文** — 如果任务涉及项目代码分析，确认子代理能访问项目路径（子代理可自行读取）
 4. **构造增强 prompt** — 按下方模板构造，必须包含 `## 设计参考文件` 块
@@ -223,9 +241,8 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 分析寄快递（sendExpress）模块的架构现状，提出优化重构方案。
 
 ## 设计参考文件（按需读取）
-- /Users/c8/.copilot/installed-plugins/development-assistant/references/docs/wechat_framework.md — 小程序框架规范
-- /Users/c8/.copilot/installed-plugins/development-assistant/references/docs/wechat_components.md — 组件设计参考
-- /Users/c8/.copilot/installed-plugins/development-assistant/references/docs/coding-principles_methodology.md — 代码规范（可读性、结构）
+- /Users/c8/.copilot/installed-plugins/development-assistant/references/docs/obsidian-knowledge/global/miniprogram-cross-platform.md — 跨端小程序规范
+- /Users/c8/.copilot/installed-plugins/development-assistant/references/docs/obsidian-knowledge/global/development-methodology.md — 代码规范（可读性、结构）
 
 ## 项目上下文
 - 项目路径：/Users/c8/rantron/fhd_miniprogram_expressdelivery
