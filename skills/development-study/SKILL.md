@@ -1,9 +1,8 @@
 ---
 name: development-study
 description: >
-  自主学习 agent。从官方文档和技术社区主动收集、筛选、提炼技术知识，
-  生成结构化草稿供用户审核后入库。支持定向学习、探索学习和自由发现三种模式。
-compatibility: requires dev-assistant MCP server for hippocampus_* and knowledge_* tools; microsoft/playwright-mcp MCP server (optional, for SPA page browser-based rendering fallback)
+  /development-study — autonomous learning agent. Actively collects, filters, and refines technical knowledge from official documentation and technical communities, generating structured drafts for user review before入库. Supports directed learning, exploratory learning, and free discovery modes. Use this skill whenever the user runs /development-study, asks to research or learn a technical topic from official docs, or wants to study a framework/API/tool systematically.
+compatibility: requires development-assistant MCP server for hippocampus_* and knowledge_* tools; microsoft/playwright-mcp MCP server (optional, for SPA page browser-based rendering fallback)
 allowed-tools: Read Edit Bash Skill Agent
 ---
 
@@ -13,12 +12,12 @@ allowed-tools: Read Edit Bash Skill Agent
 
 ## 路径常量
 
-> 本插件根目录（下称 `{ROOT}`）为 `/Users/c8/development/dev-assistant`。读取文件时拼接为绝对路径。
+> 本插件根目录（下称 `{ROOT}`）为 `/Users/c8/.copilot/installed-plugins/development-assistant`。读取文件时拼接为绝对路径。
 
 ## 继承规范
 
-> 海马体和知识库的完整约束规范见 `CONVENTIONS.md`。执行写入操作前必须用 `dev-assistant-mcp_knowledge_read_file` 读取对应章节：
-> - 写入海马体前 → 读取 CONVENTIONS.md §1-§3（信号级别 / 记忆类型 / 内容结构）
+> 海马体和知识库的完整约束规范见 `CONVENTIONS.md`。执行写入操作前必须用 `development-assistant-mcp_knowledge_read_file` 读取对应章节：
+> - 写入海马体前 → 读取 CONVENTIONS.md §1-§3（信号级别 / 记忆类型 / 内容结构含 §3.1 格式适配 + §3.2 维度注册 + §3.3 失效条件标准）
 > - 生成文档草稿前 → 读取 CONVENTIONS.md §6-§11（QG-3 / QG-4 / QG-8 / QG-9 / QG-11 / 学习源可信度指南）
 > - QG-2 入库前 → 读取 CONVENTIONS.md §4-§5（QG-1 / QG-2）
 
@@ -40,11 +39,11 @@ allowed-tools: Read Edit Bash Skill Agent
 
 **若为 `--discover` 模式** → 输出「🚧 自由发现模式计划于 v2 实现，当前版本不支持。请使用定向学习或探索学习模式。」并终止。
 
-**0.1** 调用 `dev-assistant-mcp_hippocampus_search(query=topic, dimension="study_rejected")` 获取已拒绝的源列表。
+**0.1** 调用 `development-assistant-mcp_hippocampus_search(query=topic, dimension="study_draft_rejected")` 获取已拒绝的源列表。
 - 本次搜索自动跳过已拒绝的源
 - 若返回空，输出「无历史拒绝记录」
 
-**0.2** 调用 `dev-assistant-mcp_knowledge_search(query=topic, top_k=5)` 判断模式。
+**0.2** 调用 `development-assistant-mcp_knowledge_search(query=topic, top_k=5)` 判断模式。
 - 命中且 credibility ≥ 4/10 → **更新模式**：知识库已有可靠文档。后续评审重点为冲突检测和补充，而非从头新建
 - 命中但 credibility < 4 → 输出「⚠️ 现有文档可信度偏低({N}/10)，建议新建而非补充」，默认进入**新建模式**，除非用户明确选择更新
 - 未命中 → **新建模式**
@@ -92,7 +91,7 @@ allowed-tools: Read Edit Bash Skill Agent
 **模式分支**：根据 Step 0.2 的结果选择路径。
 
 - **若为更新模式**（Step 0.2 命中已有文档）：
-  1. 先调用 `dev-assistant-mcp_knowledge_read_file` 读取已命中的现有文档全文
+  1. 先调用 `development-assistant-mcp_knowledge_read_file` 读取已命中的现有文档全文
   2. 若现有文档已完整覆盖此主题（无实质缺口）→ 输出「📚 现有知识库已覆盖此主题」并**终止**，不生成草稿
   3. 若存在缺口或过时内容 → 继续执行以下流程，Step 1.2 提炼时**聚焦于现有文档未覆盖或已过时的子要点**
 - **若为新建模式**（Step 0.2 未命中），正常执行以下流程。
@@ -100,11 +99,8 @@ allowed-tools: Read Edit Bash Skill Agent
 **1.1** 逐个读取源内容——两层策略：
 
 **Tier 1**：调用 `WebFetch` 读取源 URL。
-- 检查返回内容是否为 SPA 壳（满足任一特征即为 SPA）：
-  - 正文 < 200 字符
-  - 含 SPA 框架壳标记：`<div id="root">`、`<div id="__next">`、`<div id="app">`、`<router-outlet>`、`__NEXT_DATA__`、`window.__INITIAL_STATE__`
-  - 不含 `<p>`、`<h1>`、`<code>`、`<pre>` 等正文标签
-- 若非 SPA 且内容正常 → ✅ 成功，使用 WebFetch 内容
+- 检查返回内容是否为 SPA 壳：正文 < 200 字符、含 SPA 框架壳标记（`<div id="root">`、`<div id="__next">`、`<div id="app">`、`<router-outlet>`）、不含正文标签（`<p>`、`<h1>`、`<code>`、`<pre>`）
+- 若非 SPA 且内容正常 → ✅ 成功
 
 **Tier 2** [仅当 Tier 1 判定为 SPA 时]：使用 Playwright MCP 通过真实浏览器提取内容。
 - 依赖：环境中已配置 Playwright MCP server（`npx @playwright/mcp@latest`）
@@ -158,7 +154,7 @@ allowed-tools: Read Edit Bash Skill Agent
 
 - 不触发条件：列表中所有子要点均满足 ≥2 个源、最新源 ≤6 个月、至少 1 个 L1/L2
 
-**1.4** `dev-assistant-mcp_knowledge_search`（精准冲突定位）。
+**1.4** `development-assistant-mcp_knowledge_search`（精准冲突定位）。
 - 用 Step 1.2 的子要点列表检索现有库，定位具体重叠/冲突段落
 - 为 Step 2.2 提供锚点（哪段重叠、哪段冲突）
 - 不用于"是否入库"判断——只用于定位
@@ -175,17 +171,12 @@ allowed-tools: Read Edit Bash Skill Agent
   [ ] Step 1.3 补搜已评估 — {触发: N次补搜，结果... / 不触发: 所有子要点已满足条件}
 ```
 
-**自检清单约束**（按优先级排序，违反任一条 → 回退补全，不得继续）：
+**自检清单约束**（违反任一条 → 回退补全，不得继续）：
 
-1. **真实性校验（最高优先级）**：清单中填入的每一个值必须有当前上下文窗口中的实际工具调用结果作为依据。
-   - Step 0.2 的值必须来自 `knowledge_search` 的实际返回（命中时附带具体文档路径和 credibility 数值；未命中时附带返回为空的事实）
-   - Step 0.1 的值必须来自 `hippocampus_search` 的实际返回（命中时附带条目数和维度；未命中时附带返回为空的事实）
-   - Step 1.2 / 1.3 的值必须来自本步骤的真实产出
-   - **禁止编造**：若上下文中没有某个步骤的工具调用记录，不得填入虚构值——必须判定该步骤漏执行，回退补全
-2. 若任一步骤漏执行（上下文中无对应工具调用记录或输出）→ 回退到该步骤补全，**禁止继续后续步骤**
-3. 所有行必须完整填入实际值，不得留空或写 `[ ]` 后不填
-4. 即使为新建模式，也必须写「未命中: 新建模式」而非「无」或留白
-5. 多主题时，每个主题独立输出一份自检清单
+1. **真实性校验（最高优先级）**：清单中每个值必须有实际工具调用结果为依据（Step 0.2 来自 `knowledge_search` 返回、Step 0.1 来自 `hippocampus_search` 返回、Step 1.2/1.3 来自本步骤产出）。**禁止编造**——无工具调用记录即判定漏执行
+2. 任一步骤漏执行 → 回退补全，禁止继续
+3. 所有行必须完整填入实际值，不得留空
+4. 新建模式也必须写「未命中: 新建模式」
 
 ---
 
@@ -293,16 +284,16 @@ source:  # 增强版，每个源标注覆盖的子要点
 
 ### Step 2B：Reject 后处理
 
-当用户在 Step 2 决策点选择 B (Reject) 时，立即调用 `dev-assistant-mcp_hippocampus_add`：
+当用户在 Step 2 决策点选择 B (Reject) 时，立即调用 `development-assistant-mcp_hippocampus_add`：
 
 ```
-dev-assistant-mcp_hippocampus_add:
+development-assistant-mcp_hippocampus_add:
   platform: global
-  dimension: study_rejected
-  content: 排除: {被拒绝的源URL}
-           选择: 拒绝采集
+  dimension: study_draft_rejected
+  content: 排除: {被拒绝的源 URL 或草稿路径}
+           选择: 拒绝采集/拒绝入库——{具体拒绝原因：可信度不足/源不可访问/内容重复等}
            情境: /development-study {topic}，审核结论: {拒绝原因}
-           失效条件: 源内容有实质更新或新增官方文档覆盖此主题时重新评估
+           失效条件: 源内容有实质更新（如页面更新日期 > {当前日期}）或新增官方文档覆盖此主题时重新评估
   memory_type: known_issue
   signal_level: high
 ```
@@ -332,7 +323,7 @@ dev-assistant-mcp_hippocampus_add:
 
 **3.1** 生成文件名: `{YYYY-MM-DD}_{primary_tag}_{topic}.md`，其中 `{primary_tag}` 为 frontmatter 中声明的主标签（同名冲突时加 `-2` 后缀）
 
-**3.2** 调用 `dev-assistant-mcp_knowledge_write_drafts(filename={filename}, content={完整草稿内容——含 frontmatter + status: draft + 正文})` 写入草稿
+**3.2** 调用 `development-assistant-mcp_knowledge_write_drafts(filename={filename}, content={完整草稿内容——含 frontmatter + status: draft + 正文})` 写入草稿
 
 **3.3 强制输出**——写入后立即输出以下三行，不可省略：
 
@@ -387,64 +378,77 @@ dev-assistant-mcp_hippocampus_add:
 1. ① 去除 `status: draft`
 
 2. ② 将草稿移入 `references/docs/`（新建文件）：
-   - 调用 `dev-assistant-mcp_knowledge_read_file("drafts/{filename}")` 读取草稿内容
+   - 调用 `development-assistant-mcp_knowledge_read_file("drafts/{filename}")` 读取草稿内容
    - 去除 `status: draft`
-   - 调用 `dev-assistant-mcp_knowledge_write_file(path="references/docs/{primary_tag}_{topic}.md", content=修改后的全文)` 写入正式文档
+   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/{primary_tag}_{topic}.md", content=修改后的全文)` 写入正式文档
 
 3. ③ 新标签 → 注册到 `references/TAGS.md`（已有文件，read→modify→write）：
-   - 调用 `dev-assistant-mcp_knowledge_read_file("references/TAGS.md")` 读取当前标签注册表全文
+   - 调用 `development-assistant-mcp_knowledge_read_file("references/TAGS.md")` 读取当前标签注册表全文
    - 检查草稿中的 tags 是否已存在——已存在的跳过，未注册的按 TAGS.md 格式追加
-   - 调用 `dev-assistant-mcp_knowledge_write_file(path="references/TAGS.md", content=修改后的全文)` 写回
+   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/TAGS.md", content=修改后的全文)` 写回
    - ⚠️ 禁止直接生成新的 TAGS.md 覆盖——已有标签必须保留
 
 4. ④ 更新 `references/INDEX.md`（已有文件，read→modify→write）：
-   - 调用 `dev-assistant-mcp_knowledge_read_file("references/INDEX.md")` 读取当前完整索引
+   - 调用 `development-assistant-mcp_knowledge_read_file("references/INDEX.md")` 读取当前完整索引
    - 按 INDEX.md 的表格格式追加新文档条目（含文件路径、内容描述、标签、Keywords）
-   - 调用 `dev-assistant-mcp_knowledge_write_file(path="references/INDEX.md", content=修改后的全文)` 写回
+   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/INDEX.md", content=修改后的全文)` 写回
    - ⚠️ 禁止直接生成新的 INDEX.md 覆盖——已有条目必须保留
 
-5. ⑤ `dev-assistant-mcp_knowledge_add_doc()` 增量索引
+5. ⑤ `development-assistant-mcp_knowledge_add_doc()` 增量索引
 
-6. ⑥ 提取海马体信息 → `dev-assistant-mcp_hippocampus_add`（学习记录）：
+6. ⑥ 提取海马体信息 → `development-assistant-mcp_hippocampus_add`（学习记录）：
 
    ```
    dimension: study_completed
-   content: 排除: 无
+   content: 排除: <本次学习评估过但放弃的信息源或学习方向，含排除原因>
             选择: /development-study {topic} 学习完成，草稿通过审核已入库
-            情境: 用户通过 --review 审核确认，草稿转为正式文档 {doc_path}
-            失效条件: 当此主题有新的权威源（如新 WWDC session / 大版本发布）时重新学习
+            情境: 用户通过 --review 审核确认，credibility={N}/10，草稿转为正式文档 {doc_path}。覆盖子要点：{要点列表}
+            失效条件: {具体可观测事件——如某文档版本号更新到 X.Y、某 API 被标记为 deprecated、某框架发布 breaking change}
    memory_type: user_preference
    signal_level: medium
    ```
 
-7. ⑦ 若 knowledge_gaps 非空 → 逐条写入 `dev-assistant-mcp_hippocampus_add`（gap 记录）：
+   > ⚠️ **「排除」禁止写「无」**——每次学习都有被评估但放弃的信息源或子方向。至少记录：(1) 搜索了但跳过的源及原因，(2) 有意不覆盖的子主题及原因。
+   > 
+   > ✅ `排除: 掘金搜索"微信小程序 Skyline 渲染"返回 3 篇均 2+ 年前文章，无近期实践；菜鸟教程仅覆盖 WXML 基础语法未涉及组件通信。跳过这些源因为时效性和深度不达标。`
+   > ❌ `排除: 无`
+   > ❌ `排除: 掘金、菜鸟教程`（只有名称没有排除原因）
+   > ⚠️ **「失效条件」禁止写「重大版本更新」「新权威源发布」**——必须含可观测的具体指标：版本号阈值、具体源名称或 URL、可检查的文档更新日期。
+   >
+   > ✅ `失效条件: Swift.org 发布 SwiftUI Navigation 新文档且标注更新日期 > 2026-06、或 iOS 19 引入 NavigationStack 替代方案时重新学习`
+   > ❌ `失效条件: 当此主题有新的权威源（如新 WWDC session / 大版本发布）时重新学习`
+
+7. ⑦ 若 knowledge_gaps 非空 → 逐条写入 `development-assistant-mcp_hippocampus_add`（gap 记录）：
 
    ```
-   dimension: study_gap
-   content: 排除: {无权威源覆盖的子要点}
-            选择: 接受草稿正文但标注知识缺口
-            情境: /development-study {topic}，此子要点来源不足
-            失效条件: 后续 /study 命中此主题并获取权威源后重新评估
+   dimension: study_gap__{topic_slug}
+   content: 排除: {无权威源覆盖的子要点——具体缺少的源名称或 URL}
+            选择: 接受草稿正文但标注知识缺口——{缺口对文档可信度的具体影响}
+            情境: /development-study {topic}，此子要点来源不足。{尝试过的搜索和源}
+            失效条件: {可观测的重新评估条件——如某文档 URL 恢复可访问、某页面更新日期超过 YYYY-MM、某社区出现 >N 赞的相关文章}
    memory_type: known_issue
    signal_level: high
    ```
 
-8. ⑧ 调用 `dev-assistant-mcp_knowledge_delete_draft(filename={filename})` 删除草稿
+   > ⚠️ **`{topic_slug}` 规则**：取 `primary_tag` 或主题的英文 slug（如 `wechat-miniprogram`、`alipay-miniprogram`、`antd-ecosystem`）。`__` 双下划线作为子维度分隔符，使得 `study_gap__wechat` 和 `study_gap__alipay` 在冲突检测中被视为不同维度——只有同主题的 gap 才会互相取代，不同主题的 gap 互不干扰。这是对 `platform + dimension` 冲突检测粒度的精细化：在不改 core.py 的前提下，通过维度命名约定实现主题级隔离。
+   > ⚠️ 新 `study_gap__{slug}` 维度首次使用前，确认 `hippocampus/INDEX.md` 维度表中已注册（或在此次写入后补充注册）。
+
+8. ⑧ 调用 `development-assistant-mcp_knowledge_delete_draft(filename={filename})` 删除草稿
 
 **拒绝流程**（草稿审核阶段拒绝——与 Step 2B 的源采集阶段拒绝不同）：
-- ① 调用 `dev-assistant-mcp_hippocampus_add` 记录审核拒绝：
+- ① 调用 `development-assistant-mcp_hippocampus_add` 记录审核拒绝：
 
   ```
   dimension: study_draft_rejected
-  content: 排除: {被拒绝的草稿路径}
-           选择: 草稿审核拒绝，不采纳此版本
-           情境: /development-study --review，拒绝原因: {用户提供的拒绝原因}
-           失效条件: 有新的权威源覆盖此主题或用户重新发起学习
+  content: 排除: {被拒绝的草稿文件名}
+           选择: 草稿审核拒绝，不采纳此版本——{具体拒绝原因}
+           情境: /development-study --review，credibility={N}/10，拒绝原因: {用户提供的拒绝原因}
+           失效条件: 有新的可验证源覆盖此主题（如官方文档更新至 >{当前日期}）或用户重新发起学习时重新评估
   memory_type: known_issue
   signal_level: high
   ```
 
-- ② 调用 `dev-assistant-mcp_knowledge_delete_draft(filename={filename})` 删除草稿
+- ② 调用 `development-assistant-mcp_knowledge_delete_draft(filename={filename})` 删除草稿
 
 **修改流程**：
 - 返回主学习流程的 Step 1（阅读 + 知识提炼），将用户的修改意见作为子要点精炼的额外约束，完成后走 Step 1.5→Step 2→Step 3 生成新草稿替换旧草稿
@@ -477,4 +481,3 @@ dev-assistant-mcp_hippocampus_add:
 - 不得跳过 CONVENTIONS.md 读取——每次写入前必须先读取对应章节
 - 学习记录和拒绝记录写入海马体时，必须遵循 CONVENTIONS.md §3 的锚点格式
 - WebSearch 结果直接输出供用户审视，不假设来源可信度——可信度由 Step 2.1 论证
-- 子要点补搜仅在条件满足时触发——所有子要点已有 ≥2 个 ≤6 个月的 L1/L2 源时不触发

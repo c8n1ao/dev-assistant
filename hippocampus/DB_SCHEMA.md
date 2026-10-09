@@ -1,13 +1,13 @@
 # 海马体 (Hippocampus) 数据库结构说明
 
-> Schema v0.6.0 | 存储引擎：SQLite 3 (WAL 模式) | 2026-06-22
+> Schema v0.3.0 | 存储引擎：SQLite 3 (WAL 模式) | 2026-06-08
 
 ## 一、概述
 
-海马体是 dev-assistant 的跨会话记忆层，持久化用户的技术偏好与决策历史。
+海马体是 development-assistant 的跨会话记忆层，持久化用户的技术偏好与决策历史。
 迁移自原 JSON 文件方案 (`memory.json`)，改用 SQLite 以获得原子写入、结构化查询和全文搜索能力。
 
-**数据库文件**：`{PLUGIN_DIR}/hippocampus/memory.db`
+**数据库文件**：`~/.copilot/installed-plugins/development-assistant/hippocampus/memory.db`
 **核心代码**：`hippocampus/core.py`
 **MCP 入口**：`server/mcp_entry.py`
 
@@ -26,7 +26,7 @@ CREATE TABLE entries (
     platform        TEXT NOT NULL,          -- 平台分类
     dimension       TEXT NOT NULL,          -- 记忆维度
     memory_type     TEXT NOT NULL DEFAULT 'user_preference'  -- 记忆类型（v0.3.0 新增）
-                        CHECK(memory_type IN ('user_preference','maintenance_checklist','architecture_decision','known_issue','coding_principle')),
+                        CHECK(memory_type IN ('user_preference','coding_principle','maintenance_checklist','architecture_decision','known_issue')),
     content         TEXT NOT NULL,          -- 记忆内容正文
     signal_level    TEXT NOT NULL           -- 信号强度
                         CHECK(signal_level IN ('high','medium','weak')),
@@ -50,7 +50,7 @@ CREATE INDEX idx_entries_active ON entries(weight)
 | --------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`            | TEXT PK | 全局唯一标识，格式：`{platform}_{dimension}_{YYYYMMDDHHmmss}`。如 `ios_architecture_20260519103131`。通过解析 ID 可快速获知记录的归属平台、维度和时间。                                                                                                                                                                     |
 | `created_at`    | TEXT    | IS0 8601 格式时间戳，记录该条记忆首次写入的精确时刻。用于排序、审计和时效性判断（如淘汰陈旧记忆）。                                                                                                                                                                                                                         |
-| `platform`      | TEXT    | 该记忆适用的平台/领域。取值范围：`ios` / `android` / `web` / `miniprogram` / `desktop` / `cross_platform` / `global`。其中 `global` 表示跨平台的通用偏好。查询时平台过滤依靠此字段。                                                                                                                                        |
+| `platform`      | TEXT    | 该记忆适用的平台/领域。取值范围：`ios` / `android` / `web` / `miniprogram` / `desktop` / `cross_platform` / `global` / `general`。其中 `global` 表示跨平台通用偏好（工具链、插件开发等），`general` 表示通用 CS 知识（算法、理论等）。查询时平台过滤依靠此字段。                                                                                                                                        |
 | `dimension`     | TEXT    | 记忆所属的技术维度，用于同类偏好的冲突检测和分组聚合。典型值：`architecture`（架构）、`ui_framework`（UI框架）、`state_management`（状态管理）、`testing`（测试）、`code_conventions`（编码规范）、`memory_selection_criteria`（记忆筛选标准）、`plugin_architecture`（插件架构）、`learning_methodology`（学习方法论）等。 |
 | `memory_type`   | TEXT    | **v0.3.0 新增**。记忆的类型分类，区分用户偏好与框架维护信息。取值见下方「记忆类型分类」章节。                                                                                                                                                                                                                               |
 | `content`       | TEXT    | 记忆的正文内容。包含用户明确表达的技术偏好、踩坑经验、架构决策等。这是 AI 召回记忆时的核心文本。高密度写法：实战背景 + 决策公式/结论 + 结果。                                                                                                                                                                               |
@@ -122,7 +122,7 @@ CREATE TABLE meta (
 
 | key                              | 示例 value | 业务含义                                                                                     |
 | -------------------------------- | ---------- | -------------------------------------------------------------------------------------------- |
-| `schema_version`                 | `"0.6.0"`  | 数据库 schema 版本号，用于未来迁移判断。与 `entries`/`platform_weights` 的字段变更同步更新。 |
+| `schema_version`                 | `"0.3.0"`  | 数据库 schema 版本号，用于未来迁移判断。与 `entries`/`platform_weights` 的字段变更同步更新。 |
 | `total_sessions`                 | `"17"`     | 累计会话计数（跨所有会话的写入总次数）。每次调用 `hippocampus_add` 时自增 1。                |
 | `global_platform_priority`       | `[]`       | 平台优先级列表（JSON 数组）。历史偏好中用户对各平台的重视程度排序。当前版本未启用。          |
 | `global_third_party_tolerance`   | `"null"`   | 第三方库容忍度（`"low"` / `"medium"` / `"high"` / `null`）。当前版本未启用。                 |
@@ -203,10 +203,6 @@ CREATE TABLE meta (
 | ----- | ---------- | ----------------------------------------------------- |
 | 0.1.0 | 2026-05-19 | 初始 JSON 文件方案 (`memory.json`)                    |
 | 0.2.0 | 2026-06-08 | 迁移到 SQLite (`memory.db`)：3 表 + 3 索引 + WAL 模式 |
-| 0.3.0 | 2026-06-14 | 新增 `memory_type` 字段，四类记忆类型                  |
-| 0.4.0 | 2026-06-17 | 迁移临时表清理逻辑                                     |
-| 0.5.0 | 2026-06-19 | 新增 `idx_entries_memory_type` 索引                    |
-| 0.6.0 | 2026-06-22 | 新增 `coding_principle` 类型，五类记忆类型              |
 
 ---
 
@@ -238,10 +234,10 @@ ORDER BY count DESC;
 
 ```bash
 # SQLite 安全备份（在线）
-sqlite3 {PLUGIN_DIR}/hippocampus/memory.db ".backup ~/Desktop/memory-backup.db"
+sqlite3 ~/.copilot/installed-plugins/development-assistant/hippocampus/memory.db ".backup ~/Desktop/memory-backup.db"
 
 # 或直接复制文件（WAL 模式下需同时复制 -wal 和 -shm）
-cp {PLUGIN_DIR}/hippocampus/memory.db ~/Desktop/
+cp ~/.copilot/installed-plugins/development-assistant/hippocampus/memory.db ~/Desktop/
 ```
 
 ### 迁移到未来版本

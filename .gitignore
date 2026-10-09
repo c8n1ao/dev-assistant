@@ -20,12 +20,10 @@ references/docs/
 server/.venv/
 server/stderr.log
 
+.playwright-mcp
+.claude-plugin
+.claude
+
 # IDE
 .DS_Store
 
-# 用户本地配置（不入库）
-.claude/
-hooks/hooks.json
-
-# 草稿
-drafts/
