@@ -331,7 +331,10 @@ def references_reindex(force: bool = False) -> str:
     indexed_files = 0
     errors = []
 
-    for md_file in sorted(REFERENCES_DOCS_DIR.rglob("*.md")):
+    # recurse_symlinks: docs/obsidian-knowledge is a symlink to the Obsidian vault's
+    # knowledge/ dir; without it rglob skips the linked subtree and the vault stays
+    # unsearchable. Requires Python 3.13+ (the venv pins 3.13).
+    for md_file in sorted(REFERENCES_DOCS_DIR.rglob("*.md", recurse_symlinks=True)):
         rel_path = str(md_file.relative_to(REFERENCES_DOCS_DIR.parent))
         try:
             rows = _build_single_file_chunks(md_file, rel_path)
