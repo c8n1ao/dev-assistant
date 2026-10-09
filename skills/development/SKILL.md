@@ -9,7 +9,7 @@ allowed-tools: Read Edit Bash Skill Agent
 
 > 核心原则：蒸馏技能，思考交由人。我是具备记忆的顶级助理，不是决策者。
 
-> **路径常量**：本插件根目录为 `__PLUGIN_DIR__`。下文所有 `references/`、`hippocampus/`、`docs/` 路径均相对于此根目录。读取文件时拼接为绝对路径：`{根目录}/references/INDEX.md` 等。
+> **路径常量**：本插件根目录为 `/Users/c8/development/dev-assistant`。下文所有 `references/`、`hippocampus/`、`docs/` 路径均相对于此根目录。读取文件时拼接为绝对路径：`{根目录}/references/INDEX.md` 等。
 
 ## 启动流程（不可跳过）
 
@@ -24,7 +24,7 @@ allowed-tools: Read Edit Bash Skill Agent
 若返回结果但与当前查询语义无关（LLM 判断无相关性），输出「已检索，无相关历史偏好」并继续。
 
 > ⚠️ **前置操作**：调用 hippocampus 相关工具前，必须先用 `activate_memory_management_tools` 激活工具组。
-> 📌 **阅读规范**：海马体和知识库的完整约束规范见 `__PLUGIN_DIR__/CONVENTIONS.md`（§1-§3 海马体信号级别/记忆类型/内容结构，§4-§11 知识库 QG 规则）。**纯检索场景无需读取它**。仅在**准备写入新记忆、执行更新/遗忘**或**需要了解规则细节**时，才必须用 `knowledge_read_file` 读取对应章节。
+> 📌 **阅读规范**：海马体和知识库的完整约束规范见 `/Users/c8/development/dev-assistant/CONVENTIONS.md`（§1-§3 海马体信号级别/记忆类型/内容结构，§4-§11 知识库 QG 规则）。**纯检索场景无需读取它**。仅在**准备写入新记忆、执行更新/遗忘**或**需要了解规则细节**时，才必须用 `knowledge_read_file` 读取对应章节。
 > 💡 缓存复用：若当前轮次 Step 1 已调用过 `dev-assistant-mcp_hippocampus_search` 且结果仍在上下文中，子代理委派预检可复用该结果无需重复调用。仅当委派涉及不同话题或为新对话轮次时重新检索。
 
 #### 记忆类型的扩展
@@ -103,7 +103,7 @@ memory_type 的完整定义见 CONVENTIONS.md §2。
    - **返回结果但 snippets 显示无实质匹配** → 标注 `📚 References · dev-assistant-mcp_knowledge_search 返回 {N} 个结果，无实质匹配（{简短原因}）` → **不得跳过第 2 步**。snippets 已足够判断相关性时不必逐个 `dev-assistant-mcp_knowledge_read_file` 确认，但向量检索的假阴性只能靠 INDEX.md 补救。
 
 2. **INDEX.md 语义对齐（降级检索）**：⚠️ 第 1 步确认无实质命中后**必须**执行——不得因「大概率也没有」而跳过。
-   - 读取 `__PLUGIN_DIR__/references/INDEX.md`。
+   - 读取 `/Users/c8/development/dev-assistant/references/INDEX.md`。
    - 将用户问题与「内容描述 + Keywords」进行语义对齐匹配。
    - 若有匹配 → 输出 top-3 候选并用 `dev-assistant-mcp_knowledge_read_file` 读取最吻合的文件。
    - 若匹配度过低 → 判定为「无匹配」。
@@ -159,7 +159,7 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 
 1. AI 生成草稿（含 keywords 字段）
 2. 呈现决策点，等待用户确认
-3. 写入 `__PLUGIN_DIR__/references/docs/` 目录
+3. 写入 `/Users/c8/development/dev-assistant/references/docs/` 目录
 4. 更新 `TAGS.md`（已有文件，read→modify→write）：
    - 用 `knowledge_read_file` 读取 `TAGS.md` 全文
    - 检查新标签是否已注册——已存在则跳过，未注册则按 TAGS.md 格式追加
@@ -193,7 +193,7 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 
 ### 预检清单
 
-1. **识别任务平台和类型** — 根据平台识别结果和 `__PLUGIN_DIR__/references/INDEX.md` 的目录，自行定位需要哪些 reference 文件
+1. **识别任务平台和类型** — 根据平台识别结果和 `/Users/c8/development/dev-assistant/references/INDEX.md` 的目录，自行定位需要哪些 reference 文件
 2. **检索海马体** — 调用 `dev-assistant-mcp_hippocampus_search`，按维度分别检索（query 使用精确关键词，如 `架构设计 状态管理`、`代码规范 可读性`、`性能优化`）；每个维度 `top_k: 10`，避免无关记忆污染
 3. **收集项目上下文** — 如果任务涉及项目代码分析，确认子代理能访问项目路径（子代理可自行读取）
 4. **构造增强 prompt** — 按下方模板构造，必须包含 `## 设计参考文件` 块
@@ -223,9 +223,9 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 分析寄快递（sendExpress）模块的架构现状，提出优化重构方案。
 
 ## 设计参考文件（按需读取）
-- __PLUGIN_DIR__/references/docs/wechat_framework.md — 小程序框架规范
-- __PLUGIN_DIR__/references/docs/wechat_components.md — 组件设计参考
-- __PLUGIN_DIR__/references/docs/coding-principles_methodology.md — 代码规范（可读性、结构）
+- /Users/c8/development/dev-assistant/references/docs/wechat_framework.md — 小程序框架规范
+- /Users/c8/development/dev-assistant/references/docs/wechat_components.md — 组件设计参考
+- /Users/c8/development/dev-assistant/references/docs/coding-principles_methodology.md — 代码规范（可读性、结构）
 
 ## 项目上下文
 - 项目路径：/path/to/your/project

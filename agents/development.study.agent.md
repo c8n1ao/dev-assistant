@@ -31,7 +31,7 @@ tools:
 
 ## 路径常量
 
-> 本插件根目录（下称 `{ROOT}`）为 `__PLUGIN_DIR__`。读取文件时拼接为绝对路径。
+> 本插件根目录（下称 `{ROOT}`）为 `/Users/c8/development/dev-assistant`。读取文件时拼接为绝对路径。
 
 ## 继承规范
 
