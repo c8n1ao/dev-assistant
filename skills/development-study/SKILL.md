@@ -377,10 +377,10 @@ development-assistant-mcp_hippocampus_add:
 
 1. ① 去除 `status: draft`
 
-2. ② 将草稿移入 `references/docs/`（新建文件）：
+2. ② 将草稿移入 vault 的 `knowledge/global/`（新建文件）：
    - 调用 `development-assistant-mcp_knowledge_read_file("drafts/{filename}")` 读取草稿内容
    - 去除 `status: draft`
-   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/{primary_tag}_{topic}.md", content=修改后的全文)` 写入正式文档
+   - 调用 `development-assistant-mcp_knowledge_write_file(path="references/docs/obsidian-knowledge/global/{topic}.md", content=修改后的全文)` 写入正式文档（该路径是软链，实际落到 vault 的 `c8n1ao-Bomb/knowledge/global/`）
 
 3. ③ 新标签 → 注册到 `references/TAGS.md`（已有文件，read→modify→write）：
    - 调用 `development-assistant-mcp_knowledge_read_file("references/TAGS.md")` 读取当前标签注册表全文

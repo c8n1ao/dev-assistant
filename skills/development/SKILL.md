@@ -162,7 +162,7 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 
 1. AI 生成草稿（含 keywords 字段）
 2. 呈现决策点，等待用户确认
-3. 写入 `/Users/c8/.copilot/installed-plugins/development-assistant/references/docs/` 目录
+3. 写入 `/Users/c8/.copilot/installed-plugins/development-assistant/references/docs/obsidian-knowledge/global/` 目录（该路径是软链，实际落到 vault 的 `c8n1ao-Bomb/knowledge/global/`）
 4. 更新 `TAGS.md`（已有文件，read→modify→write）：
    - 用 `knowledge_read_file` 读取 `TAGS.md` 全文
    - 检查新标签是否已注册——已存在则跳过，未注册则按 TAGS.md 格式追加
@@ -178,7 +178,7 @@ IF 向量检索 + INDEX.md 语义对齐均无匹配:
 
 > ⚠️ **QG-2 错误处理**：若任一步骤失败（工具报错、文件未找到、权限不足），立即停止后续步骤，输出 `⚠️ QG-2 写入中断：{步骤名} 失败，原因：{错误}`，询问用户是否重试或跳过。
 
-文档规范：按 QG-3（frontmatter 必填字段，含 keywords）、QG-4（credibility 1-10）、QG-8（`{tag}_{topic}.md` 命名）、QG-9（标签先注册后使用）、QG-11（keywords 填写规范）执行。
+文档规范：按 QG-3（frontmatter 必填字段，含 keywords）、QG-4（credibility 1-10）、QG-8（`<topic>.md` 命名——跟随 vault 约定，小写连字符、无 tag 前缀；目录已按 global/projects 分范围）、QG-9（标签先注册后使用）、QG-11（keywords 填写规范）执行。
 
 > ⚠️ 标签可以创建——先用 `knowledge_read_file` 读取 TAGS.md 全文，在末尾追加新行（Tag 名 + Description + First Used），再用 `knowledge_write_file` 将**完整全文**写回。禁止只写新标签行覆盖已有内容。
 > ⚠️ keywords 必须中英双语，5-15 个，覆盖核心概念 + 常见同义词 + 口语化表达（QG-11）。

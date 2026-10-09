@@ -533,13 +533,10 @@ def knowledge_write_file(path: str, content: str) -> str:
                 "error": f"不允许的目录：仅允许 references/ 和 drafts/ 子目录，收到: {path}"
             }, ensure_ascii=False)
 
-        # 路径穿越二次检查：解析后必须在 REF_ROOT 内
-        target = (REF_ROOT / path).resolve()
-        if not str(target).startswith(str(REF_ROOT.resolve())):
-            return json.dumps({
-                "success": False,
-                "error": f"路径解析后超出插件根目录范围: {path}"
-            }, ensure_ascii=False)
+        # 路径穿越已由上面的 ".." 判断挡掉；此处不再 resolve——resolve 会把
+        # references/docs/obsidian-knowledge 这类指向 vault 的软链解析到根目录外
+        # 而误拒，而该软链正是知识库的写入目标（skill 产出落 knowledge/global/）。
+        target = Path(_os.path.normpath(_os.path.join(str(REF_ROOT), path)))
 
         # ── 确保父目录 ──
         _os.makedirs(target.parent, exist_ok=True)
