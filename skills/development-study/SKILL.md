@@ -368,7 +368,7 @@ development-assistant-mcp_hippocampus_add:
 
 | # | 方案 | 说明 |
 |---|------|------|
-| A | 入库 | 草稿 → references/docs/ + 海马体记录 |
+| A | 入库 | 草稿 → vault（global/ 或 projects/<project>/）+ 更新对应 INDEX + 海马体记录 |
 | B | 拒绝 | 记录拒绝原因，删除草稿 |
 | C | 修改 | 提供修改意见，重新生成草稿 |
 | D | 稍后 | 保留草稿，跳过本条 |
