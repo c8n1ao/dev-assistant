@@ -287,12 +287,14 @@ AI/ML:
 - 格式：`- [[相关文档]] — 一句话说明关系`
 - MoC 文件也应互相链接（跨域导航）
 
-### §12.3 MoC 内容地图
+### §12.3 MoC 内容地图（references 侧）
+
+MoC 是 **references 侧**的导航文件，**不迁入 vault**——它们的 wiki links 指向 `references/docs/` 的文档，迁进 vault 会全部悬空。vault 侧的对应入口是 `knowledge/projects/<project>/dev-assistant-moc.md`（MoC 体系概览）与各 scope 的 `INDEX.md`。
 
 每个领域/标签创建一个 `_moc_{domain}.md` 文件：
 
-- 文件名格式：`_moc_{domain}.md`，放在 `docs/` 下
-- frontmatter 必须含 `tags: [moc]`（新增 `moc` 标签，注册在 TAGS.md）
+- 文件名格式：`_moc_{domain}.md`，放在 `references/docs/` 下
+- frontmatter 必须含 `tags: [moc]`（`moc` 标签注册在 TAGS.md）
 - MoC 包含：领域概述（1-2 句）、指向该领域所有文档的 wiki links 按子主题分组、指向相邻领域 MoC 的链接
 - MoC 文件同样注册到向量索引
 
@@ -302,4 +304,4 @@ AI/ML:
 
 - 草稿必须包含指向相关文档的 `[[wiki links]]`（不少于 3 个）
 - 草稿末尾必须包含 `## 参见` 小节
-- 若新文档属于某个已有 MoC 领域，必须在 QG-2 Step 7（海马体记录）后追加：确认 MoC 文件是否已包含新文档链接，未包含则更新 MoC
+- ⚠️ MoC 更新（Step 7 后确认 MoC 是否含新文档链接）**仅适用于写入 references 侧文档时**。QG-2 的默认落点是 vault（`global/` 或 `projects/<project>/`），其导航由对应目录的 `INDEX.md` 承担，不涉及 MoC
