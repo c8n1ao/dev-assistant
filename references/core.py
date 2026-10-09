@@ -389,16 +389,21 @@ def knowledge_read_file(path: str) -> str:
     try:
         # 支持相对路径和绝对路径
         if _os.path.isabs(path):
-            target = Path(path).resolve()
+            logical = _os.path.normpath(path)
         else:
-            target = (REF_ROOT / path).resolve()
+            logical = _os.path.normpath(_os.path.join(str(REF_ROOT), path))
 
-        # 安全检查：路径必须在插件根目录内
-        if not str(target).startswith(str(REF_ROOT.resolve())):
+        # 安全检查：逻辑路径必须在插件根目录内。用 normpath 而非 resolve——
+        # resolve 会把 references/docs/obsidian-knowledge 这类指向 vault 的软链解析
+        # 到根目录外而误拒，而该软链正是知识库的读入口。normpath 仍能挡掉 `..` 穿越。
+        root = str(REF_ROOT)
+        if not (logical == root or logical.startswith(root + _os.sep)):
             return json.dumps({
                 "status": "error",
                 "reason": f"路径超出插件根目录范围: {path}"
             }, ensure_ascii=False)
+
+        target = Path(logical).resolve()
 
         if not target.is_file():
             return json.dumps({
