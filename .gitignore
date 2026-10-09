@@ -24,6 +24,10 @@ server/stderr.log
 .claude-plugin
 .claude
 
+# 用户本地配置（不入库）
+.claude/
+hooks/hooks.json
+
 # IDE
 .DS_Store
 
